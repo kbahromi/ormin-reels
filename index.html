@@ -356,17 +356,8 @@ tr:nth-child(even) td { background: #faf9f7; }
     <h1>Генератор сценариев Reels</h1>
   </header>
 
-  <div class="api-bar">
-    <div class="api-dot" id="apiDot"></div>
-    <input type="password" id="apiKey" placeholder="Вставь Gemini API ключ (AIza...)" oninput="checkKey()">
-    <button class="api-save" onclick="saveAndDetect()">Сохранить</button>
-  </div>
-  <div id="modelRow" style="display:none; margin-bottom:1rem;">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <label style="font-size:12px; color:var(--text2); white-space:nowrap;">Модель:</label>
-      <select id="modelSelect" style="flex:1; font-size:13px; padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); font-family:'Geologica',sans-serif;"></select>
-    </div>
-  </div>
+  <input type="hidden" id="apiKey" value="AIzaSyC0ZY3rPMmSllS88NZohcw7h9FktqUlMVw">
+
 
   <div class="card">
     <div class="card-title">Специальность</div>
@@ -425,7 +416,11 @@ tr:nth-child(even) td { background: #faf9f7; }
         <div class="result-name" id="resultName"></div>
         <div class="result-badge" id="resultBadge"></div>
       </div>
-      <button class="btn-copy" onclick="copyTable()">Копировать таблицу</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-copy" id="editBtn" onclick="toggleEdit()">Редактировать</button>
+        <button class="btn-copy" id="saveEditsBtn" onclick="saveEdits()" style="display:none; color:var(--teal);">Сохранить правки</button>
+        <button class="btn-copy" onclick="copyTable()">Копировать</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -462,7 +457,8 @@ const SPECS = [
 const FORMAT_LABELS = { myth:"Миф → правда", pain:"Боль → решение", education:"Образовательный", symptom:"Симптом → приём" };
 
 let selectedSpec = SPECS[0];
-let apiKey = '';
+let apiKey = document.getElementById('apiKey')?.value || '';
+let originalRows = [];
 
 function checkKey() {
   const val = document.getElementById('apiKey').value.trim();
@@ -490,42 +486,12 @@ function checkKey() {
   document.getElementById('apiDot').className = 'api-dot' + (val.startsWith('AIza') ? ' ok' : '');
 }
 
-async function saveAndDetect() {
-  apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) return;
-  localStorage.setItem('ormin_api_key', apiKey);
-  const btn = document.querySelector('.api-save');
-  btn.textContent = 'Загрузка...';
-  btn.disabled = true;
-  try {
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    const data = await resp.json();
-    const bad = ['tts','image','vision','thinking','embedding','aqa','001','002','003','004','005'];
-    const models = (data.models || [])
-      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-      .map(m => m.name.replace('models/', ''))
-      .filter(m => !bad.some(x => m.includes(x)));
-    const sel = document.getElementById('modelSelect');
-    sel.innerHTML = '';
-    models.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m;
-      opt.textContent = m;
-      if (m === 'gemini-2.5-flash' || m === 'gemini-1.5-flash-latest') opt.selected = true;
-      sel.appendChild(opt);
-    });
-    if (!sel.querySelector('option[selected]')) {
-      const flashOpt = Array.from(sel.options).find(o => o.value.includes('flash') && !o.value.includes('lite'));
-      if (flashOpt) flashOpt.selected = true;
-    }
-    document.getElementById('modelRow').style.display = 'block';
-    document.getElementById('apiDot').className = 'api-dot ok';
-    btn.textContent = 'Сохранено ✓';
-  } catch(e) {
-    btn.textContent = 'Ошибка';
-  }
-  btn.disabled = false;
-  setTimeout(() => btn.textContent = 'Сохранить', 2000);
+function saveAndDetect() {
+  // Model is hardcoded, nothing to detect
+}
+
+function getSelectedModel() {
+  return 'gemini-2.5-flash';
 }
 
 const SYSTEM_PROMPT = `Ты — опытный сценарист медицинских Reels для Instagram. Клиника доказательной медицины "Орминь", Душанбе, Таджикистан.
@@ -551,10 +517,15 @@ const SYSTEM_PROMPT = `Ты — опытный сценарист медицин
 ...финал: "Терпеть мигрень — значит терять свою жизнь зря. А лечение — это возможность вернуть её."
 ...CTA: "До встречи на приёмах"
 
-ВИЗУАЛЬНЫЕ ТИПЫ (три варианта, указывай точно):
-- "Говорящая голова: [позиция и действие врача]"
-- "Нарезка: [конкретные кадры через точку с запятой]"
-- "Анимация/инфографика: [что именно показывает]"
+ВИЗУАЛЬНЫЕ ТИПЫ — ровно 7, используй только их:
+1. "Говорящая голова: [позиция врача, эмоция, действие]"
+2. "Нарезка: [2-3 конкретных кадра через точку с запятой]"
+3. "Нарезка стоковых кадров: [2-3 конкретных стоковых кадра через точку с запятой]"
+4. "Анимация: [что именно анимируется]"
+5. "Инфографика/схема: [что показывает схема]"
+6. "Демонстрация: [врач показывает что именно]"
+7. "Текст на экране: [точный текст который появляется]"
+ПРАВИЛО МОНТАЖА: каждый кадр 2-3 секунды, в нарезке 2-4 конкретных кадра, никаких размытых описаний.
 
 КОЛИЧЕСТВО СТРОК: 8–10 на 60 сек, 10–13 на 90 сек, 6–8 на 45 сек.
 Каждая мысль — один раз. Никаких повторов и дублирования смысла между строками.
@@ -563,12 +534,17 @@ const SYSTEM_PROMPT = `Ты — опытный сценарист медицин
 
 ТОНАЛЬНОСТЬ — СТРОГО:
 Никогда не обвиняй и не осуждай зрителя. Даже намёком.
-Крючок строится на сочувствии и понимании — не на стыде или вине.
-❌ "Вы до сих пор лечите сосуды?" — звучит как упрёк
-✅ "Многие годами лечат сосуды — и это понятно, врачи так говорили" — сочувствие
+Но и не сюсюкай — без слащавости, без излишней мягкости.
+Тон: уверенный врач который говорит по делу, но с уважением к зрителю.
+
+Крючок — короткий (1-2 предложения максимум), бьёт в конкретную боль или ситуацию:
 ❌ "Вы ждёте пока само пройдёт?" — обвинение
-✅ "Хочется верить что само пройдёт. Это самое естественное желание родителя" — забота
-Зритель должен почувствовать: врач на моей стороне, он меня понимает.
+❌ "Каждому родителю хочется защитить своего ребёнка..." — сюсюканье, слишком длинно
+✅ "Прыщи у подростка — это не просто косметика. Это его уверенность в себе." — факт + боль, коротко
+✅ "Мигрень возвращается снова и снова — даже после таблеток?" — ситуация без осуждения
+✅ "Многие годами лечат сосуды. А боль не уходит." — факт, сочувствие, без упрёка
+
+Зритель должен почувствовать: врач понимает мою ситуацию и говорит по делу.
 
 ПОСЛЕДНИЕ ДВЕ СТРОКИ — всегда именно так:
 {"text":"До встречи на приёмах","visual":"Говорящая голова: врач за своим столом","caption":""}
@@ -609,7 +585,7 @@ async function generate() {
 
   try {
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${document.getElementById('modelSelect')?.value || 'gemini-2.0-flash-lite-001'}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -693,6 +669,129 @@ function renderTable(data, topic, duration) {
       }</td>`;
     tbody.appendChild(tr);
   });
+}
+
+let editMode = false;
+
+function toggleEdit() {
+  editMode = !editMode;
+  const views = document.querySelectorAll('.cell-view');
+  const edits = document.querySelectorAll('.cell-edit');
+  const editBtn = document.getElementById('editBtn');
+  const saveBtn = document.getElementById('saveEditsBtn');
+
+  views.forEach(v => v.style.display = editMode ? 'none' : '');
+  edits.forEach(e => e.style.display = editMode ? 'block' : 'none');
+  editBtn.textContent = editMode ? 'Отмена' : 'Редактировать';
+  saveBtn.style.display = editMode ? 'inline-block' : 'none';
+
+  if (editMode) {
+    document.querySelectorAll('.cell-edit').forEach(ta => {
+      ta.addEventListener('input', updateTotals);
+    });
+  }
+}
+
+function updateTotals() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  let total = 0;
+  rows.forEach(tr => {
+    const ta = tr.querySelectorAll('textarea.cell-edit')[0];
+    const textVal = ta ? ta.value : tr.querySelector('.cell-view')?.textContent || '';
+    const isOutro = textVal.toLowerCase().includes('аутро');
+    const words = countWords(textVal);
+    const sec = wordsToSec(words);
+    total += words;
+    const timeCell = tr.querySelector('.time-cell');
+    if (timeCell) timeCell.textContent = isOutro ? '—' : sec + ' с';
+  });
+  const tw = document.getElementById('totalWords');
+  const tt = document.getElementById('totalTime');
+  if (tw) tw.textContent = total;
+  if (tt) tt.textContent = '~' + wordsToSec(total) + ' с';
+}
+
+function saveEdits() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  const editedRows = [];
+  rows.forEach((tr, i) => {
+    const textareas = tr.querySelectorAll('textarea.cell-edit');
+    editedRows.push({
+      text: textareas[0]?.value || '',
+      visual: textareas[1]?.value || '',
+      caption: textareas[2]?.value || ''
+    });
+  });
+
+  // Build comparison for learning
+  const changes = [];
+  editedRows.forEach((edited, i) => {
+    const orig = originalRows[i] || {};
+    if (edited.text !== orig.text || edited.visual !== orig.visual || edited.caption !== orig.caption) {
+      changes.push({
+        row: i + 1,
+        original: { text: orig.text, visual: orig.visual, caption: orig.caption },
+        edited: { text: edited.text, visual: edited.visual, caption: edited.caption }
+      });
+    }
+  });
+
+  // Apply edits to view
+  rows.forEach((tr, i) => {
+    const textareas = tr.querySelectorAll('textarea.cell-edit');
+    const views = tr.querySelectorAll('.cell-view');
+    if (views[0]) views[0].textContent = textareas[0]?.value || '';
+    if (views[1]) {
+      const newVisual = textareas[1]?.value || '';
+      views[1].textContent = stripTag(newVisual);
+      const tagSpan = tr.querySelector('.vtag');
+      if (tagSpan) tagSpan.outerHTML = getTag(newVisual);
+    }
+    if (views[2]) {
+      const cap = textareas[2]?.value || '';
+      views[2].innerHTML = cap ? `<span class="caption-text">${cap}</span>` : `<span class="caption-empty">—</span>`;
+    }
+  });
+
+  // Export changes as text for learning
+  if (changes.length > 0) {
+    let log = `=== ПРАВКИ: ${document.getElementById('resultName').textContent} ===
+`;
+    log += `Специальность: ${selectedSpec.label}
+
+`;
+    changes.forEach(c => {
+      log += `Строка ${c.row}:
+`;
+      if (c.original.text !== c.edited.text) {
+        log += `  ТЕКСТ было: ${c.original.text}
+`;
+        log += `  ТЕКСТ стало: ${c.edited.text}
+`;
+      }
+      if (c.original.visual !== c.edited.visual) {
+        log += `  ВИЗУАЛ было: ${c.original.visual}
+`;
+        log += `  ВИЗУАЛ стало: ${c.edited.visual}
+`;
+      }
+      if (c.original.caption !== c.edited.caption) {
+        log += `  ТИТР было: ${c.original.caption || '—'}
+`;
+        log += `  ТИТР стало: ${c.edited.caption || '—'}
+`;
+      }
+      log += '
+';
+    });
+    navigator.clipboard.writeText(log).then(() => {
+      const btn = document.getElementById('saveEditsBtn');
+      btn.textContent = 'Правки скопированы!';
+      setTimeout(() => btn.textContent = 'Сохранить правки', 2000);
+    });
+  }
+
+  toggleEdit();
 }
 
 function copyTable() {
