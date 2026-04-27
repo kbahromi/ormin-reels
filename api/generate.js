@@ -1,21 +1,14 @@
-exports.handler = async function(event) {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'API key not configured' }) };
+    return res.status(500).json({ error: 'API key not configured' });
   }
 
-  let body;
-  try {
-    body = JSON.parse(event.body);
-  } catch(e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request' }) };
-  }
-
-  const { prompt } = body;
+  const { prompt } = req.body;
 
   try {
     const resp = await fetch(
@@ -37,18 +30,13 @@ exports.handler = async function(event) {
     const data = await resp.json();
 
     if (!resp.ok) {
-      const msg = data?.error?.message || 'Gemini API error';
-      return { statusCode: 500, body: JSON.stringify({ error: msg }) };
+      return res.status(500).json({ error: data?.error?.message || 'Gemini API error' });
     }
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    };
+    return res.status(200).json({ text });
 
   } catch(e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+    return res.status(500).json({ error: e.message });
   }
-};
+}
