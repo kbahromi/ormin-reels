@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Сценарии Reels — Ормин</title>
+<title>Сценарии Reels — Орминь</title>
 <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -490,7 +490,7 @@ function checkKey() {
 
 
 
-const SYSTEM_PROMPT = `Ты — опытный сценарист медицинских Reels для Instagram. Клиника доказательной медицины "Ормин", Душанбе, Таджикистан.
+const SYSTEM_PROMPT = `Ты — опытный сценарист медицинских Reels для Instagram. Клиника доказательной медицины "Орминь", Душанбе, Таджикистан.
 
 СТИЛЬ (строго):
 - Язык: русский, живой разговорный — не учебник
@@ -581,7 +581,7 @@ async function generate() {
 
   document.getElementById('status').textContent = 'Генерирую сценарий...';
   try {
-    const resp = await fetch('/.netlify/functions/generate', {
+    const resp = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: SYSTEM_PROMPT + '\n\n' + userMsg })
