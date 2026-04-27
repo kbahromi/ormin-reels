@@ -573,6 +573,7 @@ async function generate() {
 Аудитория: ${audience}
 Длина: ~${duration} секунд${context ? '\nДоп. контекст: ' + context : ''}`;
 
+  document.getElementById('status').textContent = 'Генерирую сценарий...';
   try {
     const resp = await fetch('/.netlify/functions/generate', {
       method: 'POST',
@@ -790,6 +791,6 @@ function copyTable() {
   });
 }
 </script>
-<script>buildSpecGrid();</script>
+<script>window.addEventListener("load", function() { buildSpecGrid(); });</script>
 </body>
 </html>
