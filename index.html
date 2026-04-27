@@ -402,6 +402,14 @@ tr:nth-child(even) td { background: #faf9f7; }
         </select>
       </div>
       <div class="field full">
+        <label>Модель</label>
+        <select id="modelSelect">
+          <option value="gemini-2.5-flash">gemini-2.5-flash — умная, иногда занята</option>
+          <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — быстрая, стабильная</option>
+          <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest — надёжная, всегда доступна</option>
+        </select>
+      </div>
+      <div class="field full">
         <label>Дополнительный контекст (необязательно)</label>
         <textarea id="context" placeholder="Акцент, конкретные препараты, что избегать..."></textarea>
       </div>
@@ -476,6 +484,31 @@ function buildSpecGrid() {
     if (s.id === selectedSpec.id) opt.selected = true;
     sel.appendChild(opt);
   });
+}
+
+async function loadModels() {
+  try {
+    const resp = await fetch('/api/models');
+    const data = await resp.json();
+    if (!data.models || data.models.length === 0) return;
+    const sel = document.getElementById('modelSelect');
+    const current = sel.value;
+    sel.innerHTML = '';
+    const labels = {
+      'gemini-2.5-flash': 'умная, иногда занята',
+      'gemini-2.0-flash-lite': 'быстрая, стабильная',
+      'gemini-1.5-flash-latest': 'надёжная, всегда доступна',
+    };
+    data.models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m + (labels[m] ? ' — ' + labels[m] : '');
+      if (m === current || m === 'gemini-2.5-flash') opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch(e) {
+    // keep default options if API fails
+  }
 }
 
 function changeSpec(id) {
@@ -581,7 +614,7 @@ async function generate() {
 
   document.getElementById('status').textContent = 'Генерирую сценарий...';
   try {
-    const resp = await fetch('/api/generate', {
+    const resp = await fetch('/api/generate?model=' + encodeURIComponent(document.getElementById('modelSelect')?.value || 'gemini-2.5-flash'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: SYSTEM_PROMPT + '\n\n' + userMsg })
@@ -804,6 +837,6 @@ function copyTable() {
   });
 }
 </script>
-<script>window.addEventListener("load", function() { buildSpecGrid(); });</script>
+<script>window.addEventListener("load", function() { buildSpecGrid(); loadModels(); });</script>
 </body>
 </html>
