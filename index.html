@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0052)file:///C:/Users/WIN10/Downloads/ormin_reels_25.html -->
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Сценарии Reels — Орминь</title>
-<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="./Сценарии Reels — Орминь_files/css2" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -361,7 +361,8 @@ tr:nth-child(even) td { background: #faf9f7; }
 
   <div class="card">
     <div class="card-title">Специальность</div>
-    <div class="spec-grid" id="specGrid"></div>
+    <select id="specSelect" onchange="changeSpec(this.value)" style="width:100%; font-size:14px; padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface2); color:var(--text); font-family:&#39;Geologica&#39;,sans-serif; cursor:pointer;">
+    </select>
   </div>
 
   <div class="card">
@@ -466,18 +467,19 @@ function checkKey() {
 }
 
 function buildSpecGrid() {
-  const grid = document.getElementById('specGrid');
+  const sel = document.getElementById('specSelect');
+  if (!sel) return;
   SPECS.forEach(s => {
-    const btn = document.createElement('button');
-    btn.className = 'spec-btn' + (s.id === selectedSpec.id ? ' active' : '');
-    btn.textContent = s.label;
-    btn.onclick = () => {
-      selectedSpec = s;
-      document.querySelectorAll('.spec-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    };
-    grid.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.label;
+    if (s.id === selectedSpec.id) opt.selected = true;
+    sel.appendChild(opt);
   });
+}
+
+function changeSpec(id) {
+  selectedSpec = SPECS.find(s => s.id === id) || SPECS[0];
 }
 
 
@@ -759,10 +761,8 @@ function saveEdits() {
 `;
       }
       if (c.original.caption !== c.edited.caption) {
-        log += `  ТИТР было: ${c.original.caption || '—'}
-`;
-        log += `  ТИТР стало: ${c.edited.caption || '—'}
-`;
+        log += '  ТИТР было: ' + (c.original.caption || '-') + '\n';
+        log += '  ТИТР стало: ' + (c.edited.caption || '-') + '\n';
       }
       log += '
 ';
@@ -792,5 +792,6 @@ function copyTable() {
 }
 </script>
 <script>window.addEventListener("load", function() { buildSpecGrid(); });</script>
-</body>
-</html>
+
+
+</body></html>
