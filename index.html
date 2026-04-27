@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Сценарии Reels — Орминь</title>
+<title>Сценарии Reels — Ормин</title>
 <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -428,10 +428,9 @@ tr:nth-child(even) td { background: #faf9f7; }
       <table>
         <thead>
           <tr>
-            <th>Текст (слова)</th>
-            <th>Визуальный ряд</th>
-            <th>Акцентные титры</th>
-            <th style="width:70px; text-align:center;">Время</th>
+            <th style="width:42%;">Текст (слова)</th>
+            <th style="width:48%;">Визуальный ряд</th>
+            <th style="width:10%; text-align:center;">Время</th>
           </tr>
         </thead>
         <tfoot id="tableFoot"></tfoot>
@@ -491,7 +490,7 @@ function checkKey() {
 
 
 
-const SYSTEM_PROMPT = `Ты — опытный сценарист медицинских Reels для Instagram. Клиника доказательной медицины "Орминь", Душанбе, Таджикистан.
+const SYSTEM_PROMPT = `Ты — опытный сценарист медицинских Reels для Instagram. Клиника доказательной медицины "Ормин", Душанбе, Таджикистан.
 
 СТИЛЬ (строго):
 - Язык: русский, живой разговорный — не учебник
@@ -547,9 +546,13 @@ const SYSTEM_PROMPT = `Ты — опытный сценарист медицин
 {"text":"До встречи на приёмах","visual":"Говорящая голова: врач за своим столом","caption":""}
 {"text":"Аутро","visual":"Логотип и номер клиники","caption":""}
 
-ФОРМАТ ОТВЕТА:
-Ответь ТОЛЬКО валидным JSON объектом. Никакого текста до или после. Никаких markdown блоков. Никаких пояснений. Только JSON:
-{"title":"...","rows":[{"text":"...","visual":"...","caption":"..."}]}`;
+ТАБЛИЦА СЦЕНАРИЯ — 3 поля на каждую строку:
+1. "text" — текст который говорит врач
+2. "visual" — визуальный ряд. Если нужен акцентный титр — добавь его прямо сюда в конце через " | ТИТР: [текст титра]"
+3. "seconds" — точное время этой строки в секундах (слова / 95 * 60, округли до целых). Для "Аутро" — 0.
+
+ФОРМАТ ОТВЕТА — только JSON, никакого markdown, никакой преамбулы:
+{"title":"...","rows":[{"text":"...","visual":"...","seconds":N}]}`;
 
 async function generate() {
   const topic = document.getElementById('topic').value.trim();
@@ -641,20 +644,30 @@ function stripTag(v) {
 
 function renderTable(data, topic, duration) {
   document.getElementById('resultName').textContent = data.title || topic;
-  document.getElementById('resultBadge').textContent = `${selectedSpec.label} · ~${duration} сек · ${(data.rows||[]).length} строк`;
+  document.getElementById('resultBadge').textContent = selectedSpec.label + ' · ~' + duration + ' сек · ' + (data.rows||[]).length + ' строк';
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
+  originalRows = JSON.parse(JSON.stringify(data.rows || []));
+  let totalSec = 0;
+
   (data.rows || []).forEach((row, i) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span class="row-n">${String(i+1).padStart(2,'0')}</span>${row.text || ''}</td>
-      <td>${getTag(row.visual)}${stripTag(row.visual)}</td>
-      <td>${row.caption
-        ? `<span class="caption-text">${row.caption}</span>`
-        : `<span class="caption-empty">—</span>`
-      }</td>`;
+    const isOutro = (row.text || '').toLowerCase().includes('аутро');
+    const visualFull = (row.visual || '');
+    const captionPart = row.caption ? '<br><span class="caption-text">ТИТР: ' + row.caption + '</span>' : '';
+    const sec = row.seconds || 0;
+    if (!isOutro) totalSec += sec;
+
+    tr.innerHTML =
+      '<td><span class="row-n">' + String(i+1).padStart(2,'0') + '</span>' + (row.text || '') + '</td>' +
+      '<td>' + getTag(visualFull) + stripTag(visualFull) + captionPart + '</td>' +
+      '<td style="text-align:center; font-size:12px; color:var(--text3); white-space:nowrap;" class="time-cell">' + (isOutro || sec === 0 ? '—' : sec + ' с') + '</td>';
     tbody.appendChild(tr);
   });
+
+  const foot = document.getElementById('tableFoot');
+  const timeColor = totalSec > 70 ? '#a32d2d' : totalSec < 45 ? '#854f0b' : '#0f6e56';
+  foot.innerHTML = '<tr><td colspan="2" style="padding:10px 14px; font-size:12px; color:var(--text2); border-top:1px solid var(--border);">Целевой диапазон: 45–70 сек</td><td style="padding:10px 14px; text-align:center; font-size:13px; font-weight:600; border-top:1px solid var(--border); white-space:nowrap; color:' + timeColor + ';">~' + totalSec + ' с</td></tr>';
 }
 
 let editMode = false;
