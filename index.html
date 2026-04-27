@@ -404,9 +404,9 @@ tr:nth-child(even) td { background: #faf9f7; }
       <div class="field full">
         <label>Модель</label>
         <select id="modelSelect">
-          <option value="gemini-2.5-flash">gemini-2.5-flash — умная, иногда занята</option>
-          <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — быстрая, стабильная</option>
-          <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest — надёжная, всегда доступна</option>
+          <option value="gemini-2.5-flash">gemini-2.5-flash — основная, высокое качество</option>
+          <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite — быстрая, если основная занята</option>
+          <option value="gemini-3-flash">gemini-3-flash — новая, качество уровня Pro</option>
         </select>
       </div>
       <div class="field full">
@@ -495,9 +495,9 @@ async function loadModels() {
     const current = sel.value;
     sel.innerHTML = '';
     const labels = {
-      'gemini-2.5-flash': 'умная, иногда занята',
-      'gemini-2.0-flash-lite': 'быстрая, стабильная',
-      'gemini-1.5-flash-latest': 'надёжная, всегда доступна',
+      'gemini-2.5-flash': 'основная, высокое качество',
+      'gemini-2.5-flash-lite': 'быстрая, если основная занята',
+      'gemini-3-flash': 'новая, качество уровня Pro',
     };
     data.models.forEach(m => {
       const opt = document.createElement('option');
